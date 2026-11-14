@@ -1,0 +1,341 @@
+menu "Voice Assistant"
+
+menu "Basic setup"
+
+comment "云端 ASR / LLM / TTS 模型请在电脑端配置"
+
+config VOICE_WIFI_SSID
+    string "Wi-Fi SSID"
+    default ""
+    help
+        新手：填写 ESP32 要连接的 2.4 GHz Wi-Fi 名称，大小写必须一致。
+
+config VOICE_WIFI_PASSWORD
+    string "Wi-Fi password"
+    default ""
+    help
+        新手：填写该 Wi-Fi 密码；只有开放网络才留空。
+        不要把本机 sdkconfig 当作公开示例分享。
+
+config VOICE_AUDIO_SERVER_URL
+    string "Audio test server base URL"
+    default "http://192.168.1.10:8000"
+    help
+        新手：填写运行 Python 服务的电脑局域网 IP，例如 http://192.168.1.10:8000。
+        不能填 localhost 或 127.0.0.1，那会指向 ESP32 自己。电脑与设备需网络互通。
+        这里只填 HTTP 服务基础地址，不要附加 /ping 或 /audio。
+
+config VOICE_WS_SERVER_URL
+    string "Voice WebSocket URL (empty derives from audio test server URL)"
+    default ""
+    help
+        新手：通常留空即可，自动把上面的 HTTP 地址转换为 ws/wss，
+        并附加 /ws/voice。自定义时必须使用 ws:// 或 wss://，并包含 /ws/voice 路径，
+        例如 ws://192.168.1.10:8000/ws/voice。设备端不保存云端密钥。
+
+config VOICE_SERVER_PROFILE
+    string "Server voice profile"
+    default "realtime_default"
+    help
+        新手：这是服务端的“模型组合名称”，不是 LLM 模型名。
+        保留 realtime_default 即可；ASR/LLM/TTS 在电脑端
+        server/config/voice_config.json 的 profiles.realtime_default 中选择。
+        只换云端模型无需重新烧录，重启电脑端语音服务即可。
+
+config VOICE_PLAYBACK_VOLUME
+    int "Speaker volume percent"
+    range 0 100
+    default 40
+    help
+        新手：正常对话的默认音量，0 为静音，100 为最大，建议先保留 40。
+        本选项用于对话播报，开机测试音使用驱动的默认音量。
+
+config VOICE_MIC_GAIN
+    int "Microphone PCM16 gain"
+    range 1 16
+    default 1
+    help
+        新手：正常对话的麦克风数字增益，建议保持 1。
+        增大只会同时放大声音和噪声，过大可能削波，不能代替正确接线。
+
+config VOICE_LOCAL_BUTTONS_ENABLED
+    bool "Enable two local interaction buttons"
+    default y
+    help
+        新手：默认使用两颗外接按键代替日常串口命令。
+        空闲时短按键1暂停/恢复监听；有任务时短按键1停止当前轮，随后继续监听。
+        长按键1一秒重试连接，短按/长按键2向后/向前翻页。
+        修改下方 GPIO 前，先确认实际接线。
+
+config VOICE_BUTTON_FIRST_GPIO
+    int "First button GPIO (-1 disables)"
+    depends on VOICE_LOCAL_BUTTONS_ENABLED
+    range -1 48
+    default 7
+    help
+        新手：当前接线为 GPIO7，按钮另一端接 GND。-1 表示不用这颗按键。
+        必须与实际接线一致，不能占用 app/board_pins.hpp 中的外设 GPIO。
+
+config VOICE_BUTTON_SECOND_GPIO
+    int "Second button GPIO (-1 disables)"
+    depends on VOICE_LOCAL_BUTTONS_ENABLED
+    range -1 48
+    default 3
+    help
+        新手：当前接线为 GPIO3。GPIO3 是 ESP32-S3 的启动配置输入引脚，
+        上电或复位时请松开该按键，避免影响启动；启动后可作为普通输入使用。
+
+config VOICE_BUTTON_ACTIVE_LOW
+    bool "Buttons are active low (close to GND)"
+    depends on VOICE_LOCAL_BUTTONS_ENABLED
+    default y
+    help
+        新手：当前按钮按下接 GND，保留启用；驱动会打开内部上拉。
+        只有确认接线为高电平触发时才关闭，此时驱动会启用内部下拉。
+
+choice VOICE_TRANSPORT_CODEC
+    prompt "Voice transport codec"
+    default VOICE_CODEC_OPUS
+    help
+        日常使用保持 Opus；PCM16 仅用于调试对比。
+        采样率必须与服务端和本地音频前端一致。
+
+config VOICE_CODEC_OPUS
+    bool "Raw Opus (20 ms)"
+
+config VOICE_CODEC_PCM
+    bool "PCM16 (explicit debug fallback)"
+
+endchoice
+
+endmenu
+
+menu "Advanced audio and diagnostics"
+
+config VOICE_DEVICE_AUTOSTART
+    bool "Start automatic listening when the voice service is ready"
+    depends on VOICE_REALTIME_ENABLED && VOICE_AUTO_LISTEN_ENABLED
+    default y
+    help
+        正常独立运行时，在收到 session.ready 后启动自动监听；
+        已编译且工作正常时，同时使用 D2 插话。按键可以暂停监听。
+        恢复连接时保留用户请求的模式，不重播失败轮次。
+        此选项不提供离线 ASR 或 LLM。
+
+config VOICE_SERIAL_COMMANDS_ENABLED
+    bool "Enable optional UART0 development commands"
+    depends on VOICE_REALTIME_ENABLED
+    default n
+    help
+        正常交互使用两颗物理按键和自动恢复。
+        仅在需要从 UART0 调试既有 r/s/a/i/c/n/? 命令时启用。
+        控制台日志不受此选项影响。
+
+config VOICE_WIFI_POWER_SAVE
+    bool "Enable Wi-Fi modem power saving (latency comparison)"
+    default n
+    help
+        默认关闭，以降低实时音频延迟。
+        仅在同一网络和负载下对比 WIFI_PS_MIN_MODEM 与 WIFI_PS_NONE 时启用。
+
+config VOICE_UPLINK_SEND_TIMEOUT_MS
+    int "Uplink audio packet send timeout (ms)"
+    range 100 500
+    default 200
+    help
+        限制单个音频包写入的等待时间。先保留默认值，
+        只有网络与队列实测诊断支持时才修改。失败或只写入部分内容的包不重试；
+        更长的写入等待可能使有界采集队列填满。
+
+config VOICE_REALTIME_ENABLED
+    bool "Enable realtime voice client"
+    default y
+    help
+        通过 WebSocket 对话，正常操作使用本地按键和自动监听。
+        可选 UART 命令用于保留手动诊断能力。
+
+config VOICE_LOCAL_FRONTEND_ENABLED
+    bool "Local ESP-SR AFE and VADNet"
+    depends on VOICE_REALTIME_ENABLED
+    default y
+    help
+        在本地运行 ESP-SR 单麦克风 16 kHz AFE 和 VADNet。
+        屏幕和串口控制台可观察语音/静音变化；完整烧录时须部署匹配的模型分区与镜像。
+        手动 r/s 上行保留原始 PCM 时序用于对比；下方 P4.2 自动监听使用处理后的
+        AFE 输出与本地 VAD 端点。本选项本身不启用回声消除或自动插话。
+        模型/AFE 错误会明确报告，手动原始输入模式仍可使用。
+        需要明确对比 P3 手动模式时，可关闭此选项。
+
+config VOICE_PLAYBACK_REFERENCE_ENABLED
+    bool "Observe completed speaker DMA reference (P4.3)"
+    depends on VOICE_REALTIME_ENABLED
+    default y
+    help
+        将已完成播放、经音量缩放的 24 kHz TX DMA 样本复制到八个固定内部
+        RAM 槽位和滚动保留 300 ms 的 PSRAM 历史中。此项只做观测，
+        本身不启用 AEC 或自动插话。内存分配失败时只关闭参考信号观测，不影响播放。
+        关闭后可与既有半双工基线对比。
+
+config VOICE_REFERENCE_ALIGNMENT_ENABLED
+    bool "Observe 24-to-16 kHz reference and microphone DMA alignment (P4.3 B)"
+    depends on VOICE_PLAYBACK_REFERENCE_ENABLED
+    default y
+    help
+        在现有播放任务中运行连续的抗混叠 2/3 重采样器和有界 PSRAM 参考时间线。
+        观测 RX DMA 样本锚点、已知静音区间、缺口和相对时钟漂移。
+        此项只用于诊断，本身不把参考信号送入 AFE，也不启用 AEC 或自动插话。
+        每次重建 TX 代次时，播放序号只绑定一次。
+        关闭后可与只启用 A 阶段参考观测的情况对比。
+
+config VOICE_AEC_OBSERVATION_ENABLED
+    bool "Enable ESP-SR AEC observation (P4.3 C)"
+    depends on VOICE_REFERENCE_ALIGNMENT_ENABLED && VOICE_LOCAL_FRONTEND_ENABLED
+    default y
+    help
+        完整双向语音默认启用 AEC；若仅测试半双工，可在此关闭。
+        将同一样本坐标的麦克风 PCM 和已完成播放的扬声器参考 PCM，
+        按 MR 格式送入 ESP-SR AFE。此项只启用回声消除处理，本身不启用自动插话。
+        采集时序无效或参考数据缺失时，AEC 前端会明确失败；手动原始 PCM 仍可用。
+        日常使用前须完成硬件验证。
+
+config VOICE_AEC_REFERENCE_DELAY_MS
+    int "Additional acoustic reference delay (ms)"
+    depends on VOICE_AEC_OBSERVATION_ENABLED
+    range 0 80
+    default 0
+    help
+        解释 AEC 结果前，应从受控 P4.3 B 实验的声学延迟候选值中选择。
+        零表示使用同一数字样本坐标，仅用于软件诊断联调，不代表已完成声学校准。
+
+config VOICE_AUTO_LISTEN_ENABLED
+    bool "Support explicit half-duplex automatic listening (P4.2)"
+    depends on VOICE_LOCAL_FRONTEND_ENABLED
+    default y
+    help
+        编译使用 AFE 输出的 VAD 自动开始/结束路径。
+        启用 VOICE_DEVICE_AUTOSTART 时，会话就绪后进入监听待命；
+        也可用串口 a 启动监听、m 选择手动模式。
+        检测到语音前不创建云端回合；识别、生成回答和扬声器实际播放期间暂停监听。
+        AFE 失败会明确报告，自动输入不会退回原始 PCM。
+
+config VOICE_AUTO_PREROLL_MS
+    int "Automatic speech pre-roll target (ms)"
+    depends on VOICE_AUTO_LISTEN_ENABLED
+    range 100 500
+    default 400
+    help
+        保留 VAD 判定语音开始前最近处理过的 PCM，保护首个音节。
+        默认 400 ms，为当前 vad_min_speech_ms 和 vad_delay_ms（各 128 ms）
+        以及帧取整留出余量。按完整 20 ms 帧向上取整；缓存 PCM 只发送一次，
+        随后接续同一 AFE 样本时间线上的连续帧。
+
+config VOICE_AUTO_START_CONFIRM_MS
+    int "Automatic idle speech onset confirmation (ms)"
+    depends on VOICE_AUTO_LISTEN_ENABLED
+    range 80 400
+    default 160
+    help
+        空闲时启动自动识别回合前，要求在这段时长内持续检测到 VAD 语音，
+        以精确的 20 ms AFE 输出帧计量。同时，至少半数帧（最少三帧）以及最后三帧
+        中的两帧须有实际交流能量，避免瞬态声加 VAD 拖尾单独触发云端回合。
+        保留候选开始前的预录音和此确认区间；拒绝后须重新获得连续 300 ms 安静。
+        这是起声过滤器，不是语音/噪声分类器。已经由 D2 确认的交接绕过此过滤，
+        手动录音仍由用户显式触发。
+
+config VOICE_AUTO_START_MIN_AC_RMS
+    int "Automatic idle onset minimum AC RMS (PCM16)"
+    depends on VOICE_AUTO_LISTEN_ENABLED
+    range 1 2048
+    default 80
+    help
+        仅为统计移除每个精确 20 ms 输出帧的均值后，计算其 RMS。
+        该值用于启动识别前的起声窗口和有效帧持续性判定；
+        不会丢弃已接纳回合中的弱音帧，与播放插话的能量下限相互独立。
+        这是初始调参值：轻声或极短语音可能漏检，持续噪声也可能通过。
+        此项不改变 AFE VAD、麦克风增益或 PCM 样本。
+
+config VOICE_AUTO_SILENCE_MS
+    int "Automatic end-of-speech silence (ms)"
+    depends on VOICE_AUTO_LISTEN_ENABLED
+    range 300 2000
+    default 700
+    help
+        语音开始后的初始结束静音调参值，按 AFE 输出样本时间线计量。
+        验收可从 600–800 ms 开始，再根据真实短句、轻声和停顿调整；
+        该参数不保证消除噪声误触发。
+
+config VOICE_AUTO_HANDSHAKE_MS
+    int "Automatic speech startup audio budget (ms)"
+    depends on VOICE_AUTO_LISTEN_ENABLED
+    range 500 5000
+    default 2000
+    help
+        限制等待云端语音开始就绪的时长，以及准备期间保留的已处理音频。
+        存储上限为本参数时长加预录音，再加已启用的空闲/播放确认区间中较大者，
+        并按 20 ms 帧取整。超出预算会报告启动错误并丢弃本轮，
+        之后不会静默重播旧音频。
+
+config VOICE_BARGE_IN_OBSERVATION_ENABLED
+    bool "Support explicit playback speech candidate observation (P4.3 D1)"
+    depends on VOICE_AEC_OBSERVATION_ENABLED && VOICE_AUTO_LISTEN_ENABLED
+    default y
+    help
+        默认构建插话观察路径；关闭时不编入 D1/D2 候选观察。
+        仍需 AEC 正常运行、扬声器音量合适并在实际房间验证阈值。
+        候选不会上传音频、启动云端回合或取消回答；c/m/r/n 停止观测。
+        缓存包括自动预录音、确认区间和启动预算；在 D1 中，启动预算仅表示
+        保留超时，不是等待 ASR 的时长。错误时丢弃缓存并关闭观测，保留手动输入。
+        此构建选择全双工 FD_LOW_COST AEC 流水线和 VERYAGGR 残留抑制；
+        只做 C 阶段观测时保留 SR 基线。
+
+config VOICE_BARGE_IN_CONFIRM_MS
+    int "Playback speech candidate confirmation (ms)"
+    depends on VOICE_BARGE_IN_OBSERVATION_ENABLED
+    range 100 600
+    default 200
+    help
+        按 AEC 输出样本时钟，要求持续检测到此时长的语音，并向上取整为 20 ms 帧。
+        此值仅用于初始测试，不保证声学质量。候选结束或超时后，
+        须连续安静 300 ms 才能接受下一个候选；开始时不另设原始安静门槛。
+
+config VOICE_BARGE_IN_MIN_AC_RMS
+    int "Minimum candidate-window AC RMS (PCM16)"
+    depends on VOICE_BARGE_IN_OBSERVATION_ENABLED
+    range 1 2048
+    default 80
+    help
+        除持续 VAD 语音外，还要求每个 20 ms 帧去均值后的 RMS，
+        在整个确认窗口上的平均值达到此下限，以过滤恒定或交流活动极低的信号，
+        同时避免把短暂弱音节直接视为静音。拒绝候选后进入冷却并丢弃缓存。
+        仅统计时去均值；有效候选保留原始 PCM 和预录音用于交接。
+        这是初始工程值，不是声学校准：近端轻声可能漏检，能量较高的残留回声也可能通过。
+        本参数仅用于 D1/D2 播放候选；空闲自动起声使用独立的 VOICE_AUTO_START_* 门槛，
+        手动输入仍由用户显式触发。
+
+config VOICE_BARGE_IN_ENABLED
+    bool "Support explicit automatic interruption and speech handoff (P4.3 D2)"
+    depends on VOICE_BARGE_IN_OBSERVATION_ENABLED && VOICE_AEC_OBSERVATION_ENABLED && VOICE_AUTO_LISTEN_ENABLED
+    default y
+    help
+        默认启用 D2 自动插话。设备自动启动在条件就绪时使用 D2；
+        可选串口 i 切换 D2，b 只做观测，a 仍为半双工自动监听。
+        正常 AEC 输出上确认语音后，停止本地播放、精确取消旧回答，
+        等待其确认后，把有界预录音和语音交接到新的识别回合。
+        c/m/r/n 关闭插话。语音误确认可能打断播放，因此应先使用独立 D2 固件，
+        在固定摆位和正常音量下验证。既有手动和半双工输入仍保留。
+
+config VOICE_AFE_SIGNAL_PROBE_BOOT
+    bool "Run isolated synthetic AFE signal diagnostics before voice startup"
+    depends on VOICE_BARGE_IN_OBSERVATION_ENABLED
+    default n
+    help
+        仅用于开发的固件：在麦克风和音频服务启动前，用真实全双工前端
+        运行五个有界合成输入用例，不把合成声音送到物理扬声器或云端。
+        记录输出能量、VAD 和可能确认的统计；每个用例结束后销毁前端，
+        下一个用例重新创建，全部结束后再创建正常使用的前端。
+        探针生命周期或资源错误会中止音频启动；此项不调整阈值、不自动校准 AEC，
+        也不表示已通过声学验收。
+
+endmenu
+
+endmenu

@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "active_profile": "legacy_http",
+  "news": {
+    "enabled": false,
+    "credential_ref": "SHOWAPI_APP_KEY",
+    "channel_name": "国内最新",
+    "max_results": 3,
+    "timeout_s": 10
+  },
+  "transport": {
+    "idle_timeout_seconds": 0,
+    "frame_duration_ms": 20,
+    "channels": 1,
+    "vbr": true,
+    "dtx": false,
+    "allow_pcm_fallback": true,
+    "fallback_codec": "pcm_s16le",
+    "uplink": {
+      "codec": "opus",
+      "sample_rate_hz": 16000,
+      "bitrate_bps": 24000
+    },
+    "downlink": {
+      "codec": "opus",
+      "sample_rate_hz": 24000,
+      "bitrate_bps": 32000
+    }
+  },
+  "asr": {
+    "qwen_existing": {
+      "adapter": "qwen_batch",
+      "model": "qwen-audio-3.1-asr-flash",
+      "model_ref": "DASHSCOPE_ASR_MODEL",
+      "workspace_ref": "DASHSCOPE_WORKSPACE_ID",
+      "credential_ref": "DASHSCOPE_API_KEY"
+    },
+    "doubao_2": {
+      "adapter": "doubao_streaming",
+      "model": "bigmodel",
+      "resource_id": "volc.seedasr.sauc.duration",
+      "endpoint": "wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async",
+      "credential_ref": "VOLCENGINE_ASR_API_KEY"
+    }
+  },
+  "llm": {
+    "deepseek_default": {
+      "adapter": "chat_completions",
+      "enable_web_search": true,
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-flash",
+      "model_ref": "DEEPSEEK_MODEL",
+      "credential_ref": "DEEPSEEK_API_KEY"
+    },
+    "qwen_default": {
+      "adapter": "chat_completions",
+      "base_url": "<verified-regional-chat-completions-base-url>",
+      "model": "<verified-qwen-model-id>",
+      "credential_ref": "DASHSCOPE_API_KEY"
+    }
+  },
+  "tts": {
+    "volc_default": {
+      "adapter": "volcengine_bidirectional",
+      "resource_id": "seed-tts-2.0",
+      "endpoint": "wss://openspeech.bytedance.com/api/v3/tts/bidirection",
+      "voice": "zh_female_vv_uranus_bigtts",
+      "credential_ref": "VOLCENGINE_TTS_API_KEY"
+    },
+    "cosyvoice_default": {
+      "adapter": "cosyvoice_bidirectional",
+      "endpoint": "<verified-regional-cosyvoice-websocket-url>",
+      "model": "<verified-cosyvoice-model-id>",
+      "voice": "<verified-cosyvoice-voice-id>",
+      "credential_ref": "DASHSCOPE_API_KEY"
+    },
+    "mambo_local": {
+      "adapter": "gpt_sovits",
+      "endpoint": "http://127.0.0.1:9880/",
+      "refer_wav_path": "C:/esp-project/MamboTTS-v1.2.1-full/models/refer.wav",
+      "prompt_text": "大家好，欢迎来到我的频道，今天给大家分享一个有趣的内容",
+      "prompt_language": "zh",
+      "text_language": "zh",
+      "speed": 1.0,
+      "first_segment_chars": 40,
+      "segment_chars": 80,
+      "timeout_s": 180,
+      "max_audio_bytes": 16777216
+    }
+  },
+  "profiles": {
+    "legacy_http": {
+      "asr": "qwen_existing",
+      "llm": "deepseek_default",
+      "tts": "none",
+      "require_streaming_asr": false
+    },
+    "realtime_default": {
+      "asr": "doubao_2",
+      "llm": "deepseek_default",
+      "tts": "volc_default",
+      "require_streaming_asr": true
+    },
+    "qwen_compatible": {
+      "asr": "qwen_existing",
+      "llm": "deepseek_default",
+      "tts": "cosyvoice_default",
+      "require_streaming_asr": false
+    },
+    "mambo_local": {
+      "asr": "doubao_2",
+      "llm": "deepseek_default",
+      "tts": "mambo_local",
+      "require_streaming_asr": true
+    }
+  }
+}

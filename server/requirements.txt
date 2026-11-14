@@ -1,0 +1,4 @@
+# 旧版 audio_test_server.py 和纯 HTTP 模式仍只依赖 Python 标准库。
+aiohttp==3.14.5
+# Windows x64 安装包提供 opus.dll；Linux/macOS 使用系统 libopus。
+PyOgg==0.6.14a1; sys_platform == "win32" and platform_machine == "AMD64"

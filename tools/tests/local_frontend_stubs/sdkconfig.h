@@ -1,0 +1,2 @@
+#pragma once
+#define CONFIG_VOICE_LOCAL_FRONTEND_ENABLED 1

@@ -1,0 +1,7 @@
+dependencies:
+  lvgl/lvgl: "==9.3.0"
+  espressif/esp_lvgl_port: "==2.9.0"
+  espressif/esp_websocket_client: "==1.8.0"
+  78/esp-opus: "==1.0.5"
+  espressif/cjson: "==1.7.19~2"
+  espressif/esp-sr: "==2.6.1"

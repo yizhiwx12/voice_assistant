@@ -1,0 +1,125 @@
+# macOS 系统文件
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 目录元数据
+.directory
+
+# 临时文件
+*~
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# 日志文件
+*.log
+
+# 构建产物和目录
+**/build/
+build/
+/build-*/
+/build_*/
+/cmake-build-*/
+*.o
+*.obj
+*.a
+*.lib
+*.out
+# Windows 主机工具的编译产物
+*.exe
+*.dll
+*.pdb
+
+# ESP-IDF 专用构建产物
+*.bin
+*.elf
+*.map
+# 构建生成的烧录参数
+flasher_args.json
+# 本机 Wi-Fi 配置；sdkconfig.defaults 和测试用 sdkconfig.h 需要提交
+/sdkconfig.old
+/sdkconfig
+
+# ESP-IDF 依赖
+# 旧版本或手工管理的组件
+/components/.idf/
+**/components/.idf/
+# 新版 ESP-IDF 组件管理器生成的依赖
+managed_components/
+# 安装或引用在项目内的 ESP-IDF 工具
+.espressif/
+
+# CMake 生成的文件
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+
+# Python 环境文件
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.egg-info/
+dist/
+
+# 本地 API 凭证和配置
+server_secrets.json
+server_secrets.*.json
+!server_secrets.example.json
+/server/config/voice_config.json
+/server/config/backups/
+# 录音、转写、报告和临时下载均不提交，只保留空目录占位文件
+/server/data/*
+!/server/data/.gitkeep
+.env
+.env.*
+!.env.example
+
+# 本地备份、录音和模型文件；目录限定在项目根，避免误伤源码目录
+/backups/
+/recordings/
+/models/
+/weights/
+/checkpoints/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.onnx
+
+# 虚拟环境目录
+venv/
+.venv/
+.venv*/
+env/
+
+# Python 检查工具的本地缓存与覆盖率输出
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# 语言服务器缓存
+.clangd/
+.ccls-cache/
+compile_commands.json
+
+# Windows 系统文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 用户个人配置文件
+# 该文件含本机 ESP-IDF 路径和串口；其余通用 VS Code 配置仍可提交
+/.vscode/settings.json
+*.user
+# 编辑器工作区和 Visual Studio 用户状态
+*.workspace
+*.suo
+*.sln.docstates
