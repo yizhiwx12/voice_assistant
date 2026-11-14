@@ -19,13 +19,19 @@
 
 ## 环境与依赖
 
-以下命令在项目根目录运行。Windows 建议使用独立的 `.venv-voice`：
+语音服务和配置向导要求 **Python 3.11 或更高版本**，推荐使用本项目当前已验证的 **Python 3.12（64 位）**。实时流程使用 Python 3.11 引入的 `asyncio.timeout`；即使 Python 3.10 能安装部分依赖，也不能运行本项目的这两个入口，启动时会先给出中文版本提示并退出，不读取配置或凭证。
+
+以下命令在项目根目录运行。Windows 先安装 Python 3.12 和 Python 启动器，再明确指定版本创建独立的 `.venv-voice`：
 
 ```powershell
-python -m venv .venv-voice
+py -3.12 --version
+py -3.12 -m venv .venv-voice
+.\.venv-voice\Scripts\python.exe --version
 .\.venv-voice\Scripts\python.exe -m pip install -r server/requirements.txt
 .\.venv-voice\Scripts\python.exe server/voice_server.py --list-options
 ```
+
+若没有 `py` 命令，也可先运行 `python --version`，确认是 3.11+ 后再用该解释器创建虚拟环境。已有 `.venv-voice` 时，先检查其中 `python.exe --version`；安装新版系统 Python 不会升级旧虚拟环境，需要用新版解释器重新创建它并安装依赖。曼波引擎自带的 `runtime/python.exe` 使用上游指定版本，不按本节替换。
 
 依赖锁定为 `aiohttp==3.14.5`；Windows x64 的 `PyOgg==0.6.14a1` 提供 `opus.dll`，项目直接通过 libopus C ABI 编解码。当前 DLL 的版本字符串为 `libopus unknown`，复现信息及替换方法见[原生 Opus 依赖](#原生-opus-依赖)。
 
@@ -41,16 +47,18 @@ python -m venv .venv-voice
 
 wheel 版本与文件哈希便于复现，不替代上游版本来源证明。若需要明确的 libopus 发行版本，可配置 `OPUS_LIBRARY` 为已核对的原生库绝对路径，并重新跑编解码测试及配置检查。加载顺序是显式 `OPUS_LIBRARY` → 系统查找 → Windows PyOgg DLL；Python 与 DLL 架构须一致。
 
-Linux 使用系统 libopus，例如 Debian/Ubuntu：
+Linux 使用系统 libopus，例如 Debian/Ubuntu。先安装发行版提供的 Python 3.12 和对应 venv 包；下面显式使用 `python3.12`，不要直接假定系统 `python3` 已满足最低版本：
 
 ```bash
 sudo apt-get install libopus0
-python3 -m venv .venv-voice
+python3.12 --version
+python3.12 -m venv .venv-voice
+.venv-voice/bin/python --version
 .venv-voice/bin/python -m pip install -r server/requirements.txt
 .venv-voice/bin/python server/voice_server.py --list-options
 ```
 
-Linux 尚未实际运行验证。缺失原生库时明确报错，WS 不在当前流中静默切回 PCM；调试时由客户端显式请求 `pcm_s16le`，且服务配置必须允许回退。
+发行版没有 Python 3.12 时，可使用已安装的 `python3.11` 替换上面的 `python3.12`；先确认版本输出至少为 3.11。Linux 尚未实际运行验证。缺失原生库时明确报错，WS 不在当前流中静默切回 PCM；调试时由客户端显式请求 `pcm_s16le`，且服务配置必须允许回退。
 
 ## 配置与启动
 

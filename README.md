@@ -2,6 +2,8 @@
 
 ESP32-S3 设备固件与本地 Python 语音服务，采用可独立选择的 ASR → LLM → TTS 流水线。当前本地 `realtime_default` 组合为豆包 ASR 2.0 → DeepSeek → 曼波 TTS；配置模板仍保留火山 TTS。曼波启动与验证见[服务端说明](server/README.md#本地曼波-tts)。设备固定请求 `realtime_default`，通过 GPIO7／GPIO3 双按钮操作，就绪后自动监听并启用可用的 D2 插话，日常无需串口输入。
 
+运行环境：固件使用 **ESP-IDF 6.1**；Python 语音服务需要 **Python 3.11 或更新版本，推荐已验证的 Python 3.12**。曼波引擎使用它自己附带的 Python 环境，安装步骤见[服务端说明](server/README.md#环境与依赖)。
+
 **从 GitHub 下载后想使用曼波音色？** 本仓库提供曼波/GPT-SoVITS 的 TTS 接口适配代码，**不包含曼波引擎、模型权重和参考音频**，也不会在 ESP32 上运行模型。请先按[曼波使用说明](server/README.md#本地曼波-tts)另行安装引擎，修改自己的参考音频路径，并将设备组合的 TTS 切换为 `mambo_local`。运行时电脑上需要同时保持 **9880 曼波引擎**与 **8000 语音服务**；ESP32 连接 8000。公开模板的 `realtime_default` 使用火山 TTS，不会自动改成作者本机的曼波组合。
 
 从[文档索引](docs/README.md)开始：
@@ -24,6 +26,7 @@ cd C:\esp-project\voice_assistant
 | 新闻频道、热搜、ShowAPI AppKey 及授权范围 | [新闻 API 配置](server/README.md#showapi-新闻-api) |
 | 理解架构和 P5 规划 | [总体规划](docs/realtime_voice_plan.md) |
 | 开发服务端或修改通信 | [服务端说明](server/README.md) · [设备协议](docs/voice_protocol.md) |
+| 使用固定 ESP-IDF 版本的开发容器 | [开发容器说明](.devcontainer/README.md) |
 | 查以前的故障与验证证据 | [历史归档](docs/archive/README.md) |
 
 当前开发机的固件操作使用根 `sdkconfig` 和 `build\barge-in-test`，由用户执行构建、烧录和串口监视。新克隆没有本地 `sdkconfig` 时，首次配置从 `sdkconfig.defaults` 生成，并默认启用 AEC/D2 插话；完整首次配置步骤见[操作指南](docs/operations.md#新克隆与默认插话固件)。
@@ -54,3 +57,9 @@ voice_assistant/
 ├── partitions.csv        ESP32 Flash 分区表
 └── sdkconfig.defaults    固件默认配置
 ```
+
+## 许可与第三方资源
+
+本项目自有代码采用 [MIT 许可证](LICENSE)，版权归 `yizhiwx12` 所有。使用、修改或分发时请保留许可证和版权声明。
+
+`main/fonts/lv_font_chinese_16.c` 是 Noto Sans SC 字体的转换资源，继续采用 [SIL Open Font License 1.1](main/fonts/LICENSE-OFL.txt)，发布时须保留[字体来源说明](main/fonts/README.md)和对应版权声明。ESP-IDF、LVGL、ESP-SR、Opus 等依赖按各自许可证使用；外部曼波/GPT-SoVITS 引擎、音色权重及参考音频也按各自授权使用，根目录 MIT 许可不替代这些许可或服务商 API 使用条款。

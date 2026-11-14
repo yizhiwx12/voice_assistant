@@ -1,8 +1,8 @@
-Google Inc.
+Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
-http://scripts.sil.org/OFL
+https://scripts.sil.org/OFL
 
 
 -----------------------------------------------------------
@@ -12,8 +12,8 @@ SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
 PREAMBLE
 The goals of the Open Font License (OFL) are to stimulate worldwide
 development of collaborative font projects, to support the font creation
-efforts of academic and linguistic communities, and to provide a free
-and open framework in which fonts may be shared and improved in partnership
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
 with others.
 
 The OFL allows the licensed fonts to be used, studied, modified and
@@ -75,11 +75,11 @@ permission.
 must be distributed entirely under this license, and must not be
 distributed under any other license. The requirement for fonts to
 remain under this license does not apply to any document created
-using the fonts.
+using the Font Software.
 
 TERMINATION
-This license becomes null and void if any of the above conditions
-are not met.
+This license becomes null and void if any of the above conditions are
+not met.
 
 DISCLAIMER
 THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,

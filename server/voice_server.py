@@ -3,11 +3,19 @@
 新手先运行 configure_voice.py。这里不包含厂商协议或音频算法，便于单独测试入口。
 """
 
+import sys
+
+# 在导入配置或创建运行环境前检查，旧解释器也能直接看到中文说明。
+if sys.version_info[:2] < (3, 11):
+    print("运行语音服务需要 Python 3.11 或更高版本（推荐 Python 3.12）；"
+          f"当前为 Python {sys.version_info[0]}.{sys.version_info[1]}。"
+          "请更换解释器并重新创建 .venv-voice。", file=sys.stderr)
+    raise SystemExit(2)
+
 import argparse
 import asyncio
 import json
 import logging
-import sys
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 

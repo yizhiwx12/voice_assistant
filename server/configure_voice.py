@@ -4,11 +4,19 @@
 不会启动服务、占用串口或调用云 API。--show 可只读查看设备组合。
 """
 
+import sys
+
+# 必须先于 core 导入执行，避免旧解释器在解析配置类型或异步能力时出错。
+if sys.version_info[:2] < (3, 11):
+    print("运行配置向导需要 Python 3.11 或更高版本（推荐 Python 3.12）；"
+          f"当前为 Python {sys.version_info[0]}.{sys.version_info[1]}。"
+          "请更换解释器并重新创建 .venv-voice。", file=sys.stderr)
+    raise SystemExit(2)
+
 import argparse
 import copy
 import getpass
 import os
-import sys
 from pathlib import Path
 
 from core.config import (

@@ -1,4 +1,6 @@
-# 旧版 audio_test_server.py 和纯 HTTP 模式仍只依赖 Python 标准库。
+# 服务入口和配置向导要求 Python 3.11+，推荐使用已验证的 Python 3.12。
+# pip 能安装依赖，不代表解释器满足本项目的运行要求。
+# 旧版 audio_test_server.py 和纯 HTTP 模式不需要第三方 Python 包。
 aiohttp==3.14.5
 # Windows x64 安装包提供 opus.dll；Linux/macOS 使用系统 libopus。
 PyOgg==0.6.14a1; sys_platform == "win32" and platform_machine == "AMD64"

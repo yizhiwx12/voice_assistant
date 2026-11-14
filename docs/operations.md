@@ -16,7 +16,7 @@ idf.py -B build\barge-in-test set-target esp32s3
 idf.py -B build\barge-in-test menuconfig
 ```
 
-在 `Voice Assistant → Basic setup` 填写 2.4 GHz Wi-Fi、电脑局域网 IP 和实际按键 GPIO；电脑端 TTS/LLM/ASR 选择在 Python 配置向导完成。服务器 IP 示例为 `192.168.1.10`，请换成运行 Python 服务的电脑地址。首次生成配置会采用仓库默认的 D2 插话组合。确认 menuconfig 摘要未包含自己的凭证后，由用户构建、烧录并在实机验证：
+在 `Voice Assistant → Basic setup` 填写 2.4 GHz Wi-Fi、电脑局域网 IP 和实际按键 GPIO；电脑端 TTS/LLM/ASR 选择在 Python 配置向导完成。服务器 IP 示例为 `192.168.1.10`，请换成运行 Python 服务的电脑地址。首次生成配置会采用仓库默认的 D2 插话组合。填写后生成的本机 `sdkconfig` 会包含 Wi-Fi 凭证，不要将该文件或含凭证的配置截图、日志上传到仓库。由用户构建、烧录并在实机验证：
 
 ```powershell
 idf.py -B build\barge-in-test build
