@@ -19,7 +19,8 @@ cd C:\esp-project\voice_assistant
 
 | 要做什么 | 文档 |
 | --- | --- |
-| 看已完成内容、待验项目和下一步 | [当前进度](docs/realtime_voice_progress.md) |
+| 阅读完整开发说明、测试方案、风险和结项复盘 | [项目开发文档](docs/project_development.md) |
+| 看已完成内容、项目收尾状态和已知限制 | [当前进度](docs/realtime_voice_progress.md) |
 | 启动服务、构建烧录、双按钮操作、自动恢复、日志 | [操作指南](docs/operations.md) |
 | 选择模型、音色、语速、密钥及 Wi-Fi | [新手配置](server/README.md#新手配置) |
 | 安装本地曼波、准备模型、启动两个服务及排错 | [曼波使用说明](server/README.md#本地曼波-tts) |
@@ -57,6 +58,17 @@ voice_assistant/
 ├── partitions.csv        ESP32 Flash 分区表
 └── sdkconfig.defaults    固件默认配置
 ```
+
+## 测试与维护
+
+已有 Python 环境并安装服务依赖后，可在项目根运行离线回归：
+
+```powershell
+cd C:\esp-project\voice_assistant
+.\.venv-voice\Scripts\python.exe -m unittest discover -s server/tests -t server -v
+```
+
+测试层级和用户实测结果见[测试方案](docs/project_development.md#10-测试方案)。维护时遵循 [AGENTS.md](AGENTS.md)：按模块职责修改，同步源码/配置/文档，保持密钥、构建和运行数据不入库；固件构建、烧录和串口操作由用户执行。
 
 ## 许可与第三方资源
 

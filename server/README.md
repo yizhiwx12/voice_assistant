@@ -2,9 +2,11 @@
 
 `voice_server.py` 提供两种运行方式：兼容的 HTTP 整段识别，以及 `/ws/voice` 双向实时语音。ASR、LLM、TTS 可分别选择。默认仍为 Qwen 整句识别 → DeepSeek 的 HTTP 模式。
 
-当前本地 `realtime_default` 组合为豆包 ASR 2.0 → DeepSeek SSE → 曼波 TTS，通过 `--mode realtime --profile realtime_default` 选择，先启动[本地曼波引擎](#本地曼波-tts)。配置模板仍保留火山 TTS 2.0（Vivi 2.0）组合，其 PC 整链路、同连接多轮、首音频后取消恢复及 PCM/Opus 小样本云验证见 [P2 云端验收](../docs/archive/p2/p2_cloud_acceptance.md)。这些历史云验证不代表曼波设备链路已验收。
+当前本地 `realtime_default` 组合为豆包 ASR 2.0 → DeepSeek SSE → 曼波 TTS，通过 `--mode realtime --profile realtime_default` 选择，先启动[本地曼波引擎](#本地曼波-tts)。配置模板仍保留火山 TTS 2.0（Vivi 2.0）组合，其 PC 整链路、同连接多轮、首音频后取消恢复及 PCM/Opus 小样本云验证见 [P2 云端验收](../docs/archive/p2/p2_cloud_acceptance.md)。用户于 2026-11-17 确认当前曼波设备链路已实测正常，项目按当前功能范围收尾。
 
-项目入口见[文档索引](../docs/README.md)，完成度与待办见[当前进度](../docs/realtime_voice_progress.md)，设备构建／烧录／串口操作见[操作指南](../docs/operations.md)，架构与阶段目标见[总体规划](../docs/realtime_voice_plan.md)。本文维护服务端环境、配置、PC 工具和诊断说明。
+项目入口见[文档索引](../docs/README.md)，结项状态与已知限制见[当前进度](../docs/realtime_voice_progress.md)，设备构建／烧录／串口操作见[操作指南](../docs/operations.md)，架构与阶段目标见[总体规划](../docs/realtime_voice_plan.md)。本文维护服务端环境、配置、PC 工具和诊断说明。
+
+用户已确认自动监听、160 ms 起音过滤、三行字幕、双按钮、D2 插话、重连、多轮、曼波连续播报、AnySearch 和新闻搜索均正常。曼波中文播报与音色连贯性正常；未知英文词可能逐字母读出。用户观察网络良好时首音通常在 1 秒内，网络较差时可能为 2–3 秒，未提供统一计时起点或样本统计，不能作为延迟承诺。声学主要验证了近端讲话和正常插话，未宣称完整远端／双讲／跨距离校准或长期资源统计通过。历史批次的“未执行”“待验”只描述当时证据；当前验收以这次用户反馈为准。
 
 设备帧格式、回合边界和取消语义见 [实时协议 v1](../docs/voice_protocol.md)。
 
@@ -140,7 +142,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\server\start_voice_ser
 
 项目可选接入 ShowAPI 新闻 109，用 `109-34` 列出频道、用 `109-35/109-36` 查新闻、用 `109-37` 取热搜。它与 LLM 的 `enable_web_search` 是独立开关：打开后，明确的新闻播报请求走新闻频道；具体事件“真假/怎么回事”仍走原 AnySearch 搜索；日期和普通闲聊保持原路径。
 
-**重要：账号使用权需先核对。** 官方 [OpenAPI 说明](https://www.showapi.com/openapi/market/109.json) 明确写明“仅供内部数据分析、统计及机器学习使用，不得用于终端展示”，并链接到[平台服务条款](https://www.showapi.com/helpcenter/view#/4019/2)。语音播报面向设备使用者。请先向 ShowAPI 确认你所购套餐/书面授权允许把新闻展示或播报给终端用户；确认前不要打开新闻功能。项目模板与本机配置默认 `news.enabled=false`。
+**授权状态待确认。** 官方 [OpenAPI 说明](https://www.showapi.com/openapi/market/109.json) 明确写明“仅供内部数据分析、统计及机器学习使用，不得用于终端展示”，并链接到[平台服务条款](https://www.showapi.com/helpcenter/view#/4019/2)。用户已于 2026-11-17 确认新闻搜索与播报技术上可用；这不证明账号授权已覆盖终端语音播报，授权范围仍需向 ShowAPI 核实。项目模板默认 `news.enabled=false`，模板值不代表用户当前本机设置。
 
 确认获准后，在项目根目录运行中文配置向导：
 
@@ -157,7 +159,7 @@ ShowAPI 使用 `appKey` 查询参数认证和 HTTPS POST 表单请求；Key 只�
 
 可试着问：“今天有什么新闻”“播报三条科技新闻”“英伟达最新新闻”“看看热搜”或“有哪些新闻频道”。指定人物/事件并询问真假、原因或进展时继续使用现有 AnySearch 检索，不会拿频道标题代替事件核实。未注明的相对时间不会被猜测；只支持今天、昨天、前天和不超过 15 天的明确日期范围。
 
-真实搜索必须在授权确认并填写 Key 后验证。本地 `--check-config` 只检查配置和凭证格式，不会调用 ShowAPI。完整接入契约见官方 [109 OpenAPI](https://www.showapi.com/openapi/market/109.json)、[频道查询](https://www.showapi.com/apis/news-channels-channel-109-34)、[新闻查询](https://www.showapi.com/apis/news-channels-query-109-35)、[按发布时间查询](https://www.showapi.com/apis/news-channels-search-publish-time-109-36) 和[热搜新闻](https://www.showapi.com/apis/news-channels-hot-search-109-37)。
+当前本机新闻搜索已有用户实测可用的结果；新账号部署仍需单独确认授权并填写有效 Key。本地 `--check-config` 只检查配置和凭证格式，不会调用 ShowAPI。完整接入契约见官方 [109 OpenAPI](https://www.showapi.com/openapi/market/109.json)、[频道查询](https://www.showapi.com/apis/news-channels-channel-109-34)、[新闻查询](https://www.showapi.com/apis/news-channels-query-109-35)、[按发布时间查询](https://www.showapi.com/apis/news-channels-search-publish-time-109-36) 和[热搜新闻](https://www.showapi.com/apis/news-channels-hot-search-109-37)。
 
 `active_profile` 只决定没有显式指定组合时的默认值。**设备显式请求 `realtime_default`，因此只改 `active_profile`、启动的 `--profile` 或 `--tts` 可能不会改变设备模型**；应编辑设备请求的 profile，或在固件配置中更改 `VOICE_SERVER_PROFILE` 并烧录。现有命令行覆盖仍用于未指定 profile 的客户端和 PC 调试。
 
@@ -211,7 +213,7 @@ idf.py -B build\barge-in-test menuconfig
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\server\start_voice_server.ps1 -Mode realtime -Profile realtime_default -CheckConfig
 ```
 
-用 `--config` / `-Config` 和 `--secrets` / `-Secrets` 指定其他文件。此前火山 ASR/TTS 凭证、实时配置和原生 Opus 加载检查通过，基础短句及完整 PC 实时链路已有真实云调用记录，结果保存在忽略的 `data/` 中；当前曼波组合需另行启动引擎与语音服务验证。
+用 `--config` / `-Config` 和 `--secrets` / `-Secrets` 指定其他文件。此前火山 ASR/TTS 凭证、实时配置和原生 Opus 加载检查通过，基础短句及完整 PC 实时链路已有真实云调用记录，结果保存在忽略的 `data/` 中；当前曼波组合已由用户完成设备实测，运行时仍须同时保持引擎与语音服务在线。
 
 LLM SSE 默认使用 1024 token 预算，旧非流式默认仍为 128；可在业务配置对应 LLM 条目中用 `max_tokens` 覆盖。length 等异常结束会明确失败，不把已截断的回答当成完整成功，也不自动重试已经开始播报的回复。
 
@@ -227,11 +229,11 @@ API Key 可选。本地服务默认可匿名调用，限额较低；要使用自
 
 每轮有一条不含识别正文的 `request_route route=date/search/chat search_enabled=...`，可分清日期直答、命中搜索和普通聊天；搜索开始记录 `web_search status=pending`。搜索限流、超时、空结果或格式错误时，直接显示并播报暂时无法核实，继续保留手动阅读和下一轮对话；不让 LLM 在这类故障后猜新闻。HTTP 402 等错误正文可能含自动生成凭证，服务不读取、不记录、不保存它。服务日志 `web_search status=ok results=...` 表示成功取得资料，`status=unavailable reason=... http_status=...` 或 `status=disabled` 表示降级；日志不含问题、网页正文、URL 或密钥。
 
-重启窗口 B 的 8000 服务后，分别问“今天是多少号”“今天有什么新闻”“给我讲个笑话”，并验证搜索等待时键1取消、下一轮正常。观察新闻来源和日期是否明确、普通聊天是否没有搜索日志。窗口 A 的曼波保持运行，无需构建或烧录；标准启动命令见上方。配置检查不会调用搜索，匿名限额或密钥可用性须以真实查询为准。
+用户已确认命中关键词时 AnySearch 和新闻搜索能够正常触发并使用。以后修改配置或更换账号时，可在重启窗口 B 的 8000 服务后，分别问“今天是多少号”“今天有什么新闻”“给我讲个笑话”，并验证搜索等待时键1取消、下一轮正常。观察新闻来源和日期是否明确、普通聊天是否没有搜索日志。窗口 A 的曼波保持运行，无需构建或烧录；标准启动命令见上方。配置检查不会调用搜索，匿名限额或密钥可用性须以真实查询为准。
 
-实时回答现在先收齐 LLM 输出，再通过有界 `llm.delta` 和 `llm.done` 让设备一次提交正文，之后才启动 TTS 和音频。正文不会随字幕批次缩短或追加；首音等待包含整篇回答的生成时间。需配套更新固件并重启服务，新模式和旧版兼容边界见[设备协议](../docs/voice_protocol.md#下行与取消)。设备保留最多 8191 UTF-8 字节，超长回答明确显示截断提示，不能无限保留全文。
+实时回答现在先收齐 LLM 输出，再通过有界 `llm.delta` 和 `llm.done` 让设备一次提交正文，之后才启动 TTS 和音频。正文不会随字幕批次缩短或追加；首音等待包含整篇回答的生成时间。从旧版本升级时需配套更新固件并重启服务，新模式和旧版兼容边界见[设备协议](../docs/voice_protocol.md#下行与取消)。设备保留最多 8191 UTF-8 字节，超长回答明确显示截断提示，不能无限保留全文。
 
-火山 `seed-tts-2.0` 默认请求 `enable_subtitle=true`，从返回事件提取 24 kHz 有效 PCM 的逐词时间戳。PCM 仍在原有四秒有界队列中，向传输层按 20 ms 切片交付，已到达的字幕优先于剩余 PCM。服务端将词位置保守映射到已提交的回答正文，当前 `response_word_timestamps` 模式只发时间与正文范围，不用 TTS 字幕覆盖文字。字段与容量见[字幕协议](../docs/voice_protocol.md#播报字幕扩展)。规范化差异不能可靠对齐或元数据非法时，设备退出跟随、全文保留、音频继续；没有字幕时在流结束前通知。其他 TTS 或显式设置 `enable_subtitle=false` 时仍可阅读完整回答并手动翻页。全文预载不保证词时间戳提前到齐，真实同步效果仍需联调确认。
+火山 `seed-tts-2.0` 默认请求 `enable_subtitle=true`，从返回事件提取 24 kHz 有效 PCM 的逐词时间戳。PCM 仍在原有四秒有界队列中，向传输层按 20 ms 切片交付，已到达的字幕优先于剩余 PCM。服务端将词位置保守映射到已提交的回答正文，当前 `response_word_timestamps` 模式只发时间与正文范围，不用 TTS 字幕覆盖文字。字段与容量见[字幕协议](../docs/voice_protocol.md#播报字幕扩展)。规范化差异不能可靠对齐或元数据非法时，设备退出跟随、全文保留、音频继续；没有字幕时在流结束前通知。其他 TTS 或显式设置 `enable_subtitle=false` 时仍可阅读完整回答并手动翻页。用户已确认当前三行字幕功能正常；全文预载不保证词时间戳提前到齐，更换 TTS、参数或设备环境后仍应按需观察同步效果。
 
 TTS2.0 的句子开始／结束事件 350／351 与独立字幕事件分开处理，边界消息不参与字幕解码；其他事件的空 `words` 继续等待真正的逐词时间戳。此前已修复 `tts_subtitle_invalid event=350 reason=invalid_schema` 导致整轮字幕失效的问题，该项本身只涉及服务端；当前完整正文与新 UI 则需要更新固件。服务终端 `subtitle_state status=following`（已下发首批有效字幕）或 `status=unavailable reason=... detail=...` 区分上游非法数据、组装错误和流结束无字幕；不记录正文。实机复验步骤见[操作指南](../docs/operations.md#三行字幕随播报自动翻页)。
 
@@ -433,14 +435,14 @@ GPT-SoVITS 返回的音频会被转换为 24 kHz 单声道 PCM16，再复用现�
 
 当前仍先生成完整 LLM 回答并提交显示，随后把播报文本按标点分段合成：本地 `tts.mambo_local.first_segment_chars=40`、`segment_chars=80`，分别限制首段与后续段的字符数；两项均支持 8–200 的整数，缺省也为 40／80。首段 WAV 完成后立刻下发，同时只预取下一段；每次最多一个 HTTP 合成请求，缓存限制在当前段和下一段，所有段共用同一个设备音频流。现在首音无需等待整篇 TTS 完成，仍包含整篇 LLM 生成和首段合成时间。
 
-这是旧 API 上的分段请求，不是把它切为 OGG 原生流式。每段仍返回完整 WAV，参考音频会被引擎重复处理；切得太短会增加请求开销和停顿。保留引擎原有段尾静音，不额外加静音；后段推理若慢于当前段播放，仍可能出现句间等待。先用 40／80 验证首音与连贯性，再按实际听感调节；不承诺固定秒数或总合成吞吐量提升。
+这是旧 API 上的分段请求，不是把它切为 OGG 原生流式。每段仍返回完整 WAV，参考音频会被引擎重复处理；切得太短会增加请求开销和停顿。保留引擎原有段尾静音，不额外加静音；后段推理若慢于当前段播放，仍可能出现句间等待。用户已确认当前中文连续播报和音色连贯性正常；以后调参可从 40／80 开始比较首音与连贯性，不承诺固定秒数或总合成吞吐量提升。
 
 `max_audio_bytes` 对整轮多个响应累计，`timeout_s` 使用首个合成请求起的总预算，不因分段重置；外层流水线仍有包含 LLM、合成和下发的 120 秒总时限。取消或关闭会取消并回收客户端当前请求／预取任务，不保证远端已经开始的 GPU 推理立即停止。后段失败不会自动重播已经听过的内容。
 
-本次只需在窗口 B 重启 8000 语音服务，窗口 A 的 9880 曼波继续运行，固件无需重建／烧录。用同一条较长问题对比回答文字显示到首音的等待、句间空白，并验证键1取消后下一轮正常；实际收益需要这组设备观察。
+以后修改这些服务端分段参数，只需在窗口 B 重启 8000 语音服务，窗口 A 的 9880 曼波继续运行，固件无需重建／烧录。复测时可用同一条较长问题对比回答文字显示到首音的等待、句间空白，并验证键1取消后下一轮正常；当前版本的连续播报、音色连贯性和插话中断已获用户确认。
 
 服务终端的 `tts_segment` 提供 `index`、`text_chars`、`request_ms`、`audio_ms` 及累计响应／PCM 字节数。`index=1` 的 `request_ms` 是第一段 HTTP 合成、下载和转换耗时，不包含之前的 LLM 或设备缓冲。后续段的 `request_ms` 持续大于上一段 `audio_ms` 时，预取很可能赶不上播放；这仍不是扬声器实际延迟测量。日志只包含固定分类和数字，不含回答或参考文本。
 
-离线服务端完整回归 303 项通过，覆盖真实配置选择、真实 provider 工厂、32→24 kHz 转换、故障诊断、分段首音提前输出、单段预取、取消回收及同流连续下发；本地实时配置和 Opus 加载检查通过。`--check-config` 不检查 9880 服务在线，也不执行真实合成。用户已能使用曼波播报；此次分段优化后的首音延迟、段间停顿、长回答完整性、多轮及取消恢复仍待实机确认。构建、烧录和串口操作不属于本次修正。
+该分段优化交付时的离线服务端完整回归为 303 项通过，覆盖真实配置选择、真实 provider 工厂、32→24 kHz 转换、故障诊断、分段首音提前输出、单段预取、取消回收及同流连续下发；本地实时配置和 Opus 加载检查通过。`--check-config` 不检查 9880 服务在线，也不执行真实合成。用户于 2026-11-17 补充确认曼波设备测试正常，连续播报、音色连贯性、插话中断和多轮功能正常；首音约 1 秒内／差网络 2–3 秒是用户体验观察，尚无统一计时口径和分位统计。历史批次未由代理执行的构建、烧录和串口记录保持原边界。
 
 要恢复火山，将本地 `profiles.realtime_default.tts` 改回 `volc_default`，停止并重启语音服务；无需覆盖整份本地配置或重新烧录。
